@@ -42,7 +42,7 @@ export const useIrrigationStore = create<IrrigationState>()(
         dailyReport: false
       },
       systemStatus: {
-        waterPressure: 0,
+        waterPressure: 2,
         timestamp: new Date().toISOString(),
         operationMode: 'automatic'
       },
