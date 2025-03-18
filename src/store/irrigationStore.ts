@@ -21,10 +21,17 @@ interface IrrigationState {
   updateNotificationSettings: (settings: Partial<NotificationSettings>) => void;
 }
 
+const defaultZone: Zone = {
+  id: 'neskov-plastenik',
+  name: 'Нешков пластеник',
+  active: false,
+  schedule: []
+};
+
 export const useIrrigationStore = create<IrrigationState>()(
   persist(
     (set) => ({
-      zones: [],
+      zones: [defaultZone],
       sessions: initialSessions,
       activeZones: [],
       notifications: [],
@@ -40,7 +47,19 @@ export const useIrrigationStore = create<IrrigationState>()(
         operationMode: 'automatic'
       },
       addZone: (zone) =>
-        set((state) => ({ zones: [...state.zones, zone] })),
+        set((state) => {
+          // Prevent duplicate zones and ensure default zone is always present
+          const existingZone = state.zones.find(z => z.id === zone.id);
+          if (existingZone) return state;
+
+          return { 
+            zones: [
+              defaultZone,
+              ...state.zones.filter(z => z.id !== defaultZone.id),
+              zone
+            ]
+          };
+        }),
       toggleZone: (zoneId) =>
         set((state) => {
           const newActiveZones = state.activeZones.includes(zoneId)
@@ -137,6 +156,10 @@ export const useIrrigationStore = create<IrrigationState>()(
       name: 'irrigation-storage',
       deserialize: (str) => {
         const parsed = JSON.parse(str);
+        // Ensure default zone is always present after loading from storage
+        if (!parsed.zones?.some((z: Zone) => z.id === defaultZone.id)) {
+          parsed.zones = [defaultZone, ...(parsed.zones || [])];
+        }
         return {
           ...parsed,
           notifications: parsed.notifications.map((n: any) => ({
